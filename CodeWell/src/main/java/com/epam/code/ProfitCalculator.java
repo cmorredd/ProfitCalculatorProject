@@ -5,7 +5,9 @@ import org.apache.log4j.Logger;
 import javax.xml.bind.ValidationException;
 import java.io.FileNotFoundException;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,9 +29,8 @@ public class ProfitCalculator {
         CsvFileReader csvFileReader = new CsvFileReader();
         List<Account> accounts;
 
-
         //Read file and return the list of Accounts
-        String fileName="TestData-TestCaseData.csv";
+        String fileName="TestData.csv";
 
         try {
             accounts = csvFileReader.readAccountsFromCSV(fileName);
@@ -47,17 +48,33 @@ public class ProfitCalculator {
             logger.info("------------------------------------");
             logger.info("Total Network profit by region in USD");
             logger.info("------------------------------------");
+            Map<String,BigDecimal> netProfitByRegion=new HashMap<>();
+            Map<String,BigDecimal> grossProfitByRegion=new HashMap<>();
+
             regions.stream().sorted().forEach(region -> {
-                logger.info(region + "---->" + BigDecimal.valueOf(totalNetProfit(accounts, region)));
+                BigDecimal totalNetProfit=BigDecimal.valueOf(totalNetProfit(accounts, region));
+                logger.info(region + "--Net Profit -->" + totalNetProfit);
+                netProfitByRegion.put(region,totalNetProfit);
+
+                BigDecimal totalGrossProfit=BigDecimal.valueOf(totalGrossProfitByRegion(accounts, region));
+                logger.info(region + "--Gross Profit -->" + totalGrossProfit);
+                grossProfitByRegion.put(region,totalGrossProfit);
             });
             logger.info("------------------------------------");
             logger.info("Total Gross profit by Country in USD");
-
-
             countries.stream().sorted().forEach(country -> {
                 logger.info(country + "---->" + BigDecimal.valueOf(totalGrossProfitByCountry(accounts, country)));
             });
             logger.info("------------------------------------");
+            logger.info("Most Profitable Region in USD before Tax=");
+            logger.info(grossProfitByRegion.entrySet().stream().max((entry1, entry2) -> entry1.getValue().doubleValue() > entry2.getValue().doubleValue() ? 1 : -1).get().getKey());
+            logger.info("------------------------------------");
+
+            logger.info("------------------------------------");
+            logger.info("Most Profitable Region in USD After Tax=");
+            logger.info(netProfitByRegion.entrySet().stream().max((entry1, entry2) -> entry1.getValue().doubleValue() > entry2.getValue().doubleValue() ? 1 : -1).get().getKey());
+            logger.info("------------------------------------");
+
         } catch (FileNotFoundException e) {
             logger.error(e.getMessage());
         } catch (ValidationException e) {
@@ -92,12 +109,19 @@ public class ProfitCalculator {
         return accountsByCountry.stream().mapToDouble(account -> account.getGrossProfitInUSD()).sum();
     }
 
-   /* public static String getMostProfitableRegionBeforeTax(List<Account> accounts){
 
+    /**
+     *totalGrossProfitByRegion - Calculates Total Gross Profit By Region
+     * @param accounts
+     * @param region
+     * @return
+     */
+    public static Double totalGrossProfitByRegion(List<Account> accounts,String region){
+        List<Account> accountsByRegion = accounts.stream().filter(account -> region.equalsIgnoreCase(account.getRegion())).collect(Collectors.toList());
+        return accountsByRegion.stream().mapToDouble(account ->
+                account.getGrossProfitInUSD()
+        ).sum();
     }
 
-    public static String getMostProfitableRegionAfterTax(List<Account> accounts){
-
-    }*/
 
 }
